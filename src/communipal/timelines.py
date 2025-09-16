@@ -11,7 +11,7 @@ import matplotlib.patches as mpatches
 # from datetime import timedelta
 # import os
 
-font_size = 12
+font_size = 14
 mpl.rcParams['xtick.labelsize'] = font_size
 mpl.rcParams['ytick.labelsize'] = font_size
 mpl.rcParams['axes.labelsize'] = font_size
@@ -21,7 +21,7 @@ epoch_num = mdates.date2num(pd.Timestamp('1970-01-01'))
 category_styles = {
     "Home": dict(facecolors='tab:blue'),
     "Community": dict(facecolors='tab:red'),
-    # "Non-Wear": dict(facecolors='white', edgecolors='black'),
+    "Non-Wear": dict(facecolors='white', edgecolor = 'gray'), 
     "Sleep": dict(facecolors='none', edgecolors='black', hatch='////', linewidth=0),
 }
 
@@ -29,7 +29,7 @@ legend_handles = {
     "Home": mpatches.Patch(facecolor='tab:blue', label="Home"),
     "Sleep": mpatches.Patch(facecolor='tab:blue', edgecolor='black', hatch='////', label="Sleep"),
     "Community": mpatches.Patch(facecolor='tab:red', label="Community"),
-    # "Non-Wear": mpatches.Patch(facecolor='white', edgecolor='black', label="Non-Wear"),
+    "Non-Wear": mpatches.Patch(facecolor='white', edgecolor='gray', label="Non-Wear"),
 }
 
 def convert_pal_to_timeline(df):
@@ -344,3 +344,184 @@ def simple(df,amputee = False,legend = True, sleep_shade = True):
 
     plt.show()
 
+
+def comparison(dfs, amputee=False, legend=True, sleep_shade=True, labels=None):
+    '''
+    Compare any number of PAL-like dataframes on stacked daily timelines.
+
+    Parameters
+    ----------
+    dfs : list[pd.DataFrame] | dict[str, pd.DataFrame]
+        The dataframes to compare. If a dict is provided, its keys are used as labels.
+        If a list is provided, you can pass `labels` (same length) to label each track.
+    amputee : bool
+        If True, disables sleep shading and legend will exclude Sleep.
+    legend : bool
+        Whether to show category legend (Home, Sleep, Community, Non-wear).
+    sleep_shade : bool
+        Whether to shade sleep (overridden to False if `amputee=True`).
+    labels : list[str] | None
+        Optional labels for each DF if `dfs` is a list.
+    '''
+    if amputee:
+        sleep_shade = False
+
+    if isinstance(dfs, dict):
+        series = list(dfs.items())
+    else:
+        if labels is None:
+            labels = [f"DF {i+1}" for i in range(len(dfs))]
+        series = list(zip(labels, dfs))
+
+    n_series = len(series)
+    # Convert to timeline space once per DF and precompute bar lists per category
+    classification_list = ['Home', 'Community', 'Non-Wear']
+    per_df = []
+    for name, df in series:
+        temp = convert_pal_to_timeline(df)  # must create Start, End, Start_Num, Duration, community_classification, Event Type
+
+        # Classification -> list[[start_num, duration], ...]
+        category_map = {c: [] for c in classification_list}
+        for c in classification_list:
+            sel = temp[temp['community_classification'] == c]
+            if not sel.empty:
+                category_map[c] = sel[['Start_Num', 'Duration']].values.tolist()
+
+        # Specific event types
+        nonwear_type = temp[temp['Event Type'] == 4]
+        nonwear_list = nonwear_type[['Start_Num', 'Duration']].values.tolist()
+
+        sleeping_type = temp[temp['Event Type'] == 3.1]
+        sleeping_list = sleeping_type[['Start_Num', 'Duration']].values.tolist()
+
+        per_df.append({
+            "name": name,
+            "temp": temp,
+            "categories": category_map,
+            "nonwear_list": nonwear_list,
+            "sleeping_list": sleeping_list,
+        })
+
+    # Global day range across all DFs
+    day0 = min(pd.to_datetime(d['temp']['Start']).min().normalize() for d in per_df)
+    dayn = max(pd.to_datetime(d['temp']['End']).max().ceil('D') for d in per_df)
+
+    days = pd.date_range(day0, dayn, freq='D', inclusive='left')
+    n_days = len(days)
+
+    # Figure/axes
+    # fig, ax = plt.subplots(n_days, 1, figsize=(12, max(3, 1*n_days)), squeeze=False)
+    fig, ax = plt.subplots(n_days, 1, figsize=(12, 1.8*n_days), squeeze=False)
+    ax = ax.ravel()
+
+    # Total vertical span per subplot
+    bar_height=4
+    bar_padding=3
+    track_span = bar_height + bar_padding
+    margin_top = bar_height + 2
+    yaxis_height = n_series * track_span + margin_top
+    bar_start = 0  # first track starts at 0
+
+
+    # Plot each day
+    for i, axi in enumerate(ax):
+        day_start = days[i]
+        day_end = day_start + pd.Timedelta(days=1)
+        axi.set_xlim(day_start, day_end)
+
+        # Background full-day non-wear (white) per DF track, then overlay category bars
+        for s_idx, d in enumerate(per_df):
+            y0 = bar_start + s_idx * track_span
+
+            # Full-day base (white) to "clear" background for that track
+            full_day_bar = [(mdates.date2num(day_start),
+                             mdates.date2num(day_end) - mdates.date2num(day_start))]
+            axi.broken_barh(full_day_bar,
+                            (y0, bar_height),
+                            facecolors='white',
+                            zorder=0)
+
+            # Home
+            hbar = bars_for_day(d["categories"].get('Home', []), day_start, day_end)
+            if hbar:
+                axi.broken_barh(hbar,
+                                (y0, bar_height),
+                                **category_styles["Home"])
+
+            # Community
+            cbar = bars_for_day(d["categories"].get('Community', []), day_start, day_end)
+            if cbar:
+                axi.broken_barh(cbar,
+                                (y0, bar_height),
+                                **category_styles["Community"])
+
+            # Sleep (optional shade)
+            if sleep_shade:
+                sbar = bars_for_day(d["sleeping_list"], day_start, day_end)
+                if sbar:
+                    axi.broken_barh(sbar,
+                                    (y0, bar_height),
+                                    **category_styles["Sleep"])
+
+            # Non-wear overlays
+            nbar_event = bars_for_day(d["nonwear_list"], day_start, day_end)
+            if nbar_event:
+                axi.broken_barh(nbar_event,
+                                (y0, bar_height),
+                                facecolors='white')
+
+            nbar_class = bars_for_day(d["categories"].get('Non-Wear', []), day_start, day_end)
+            if nbar_class:
+                axi.broken_barh(nbar_class,
+                                (y0, bar_height),
+                                facecolors='white')
+
+            # Left-side label for the track (one per DF)
+            axi.text(day_start - pd.Timedelta(minutes=10),
+                    #  y0 + bar_height + 0.15,
+                     y0,
+                     d["name"],
+                     ha='right', va='bottom', 
+                     fontsize=font_size)
+
+        # Cosmetics per subplot
+        axi.set_yticks([])
+        axi.set_ylabel("")
+        axi.tick_params(labelleft=False)
+        axi.set_ylim(0, yaxis_height)
+        axi.set_xticklabels([])
+        axi.grid(axis="x")
+
+        # Day-of-week annotation (at top of stack)
+        axi.text(day_start + pd.Timedelta(hours=0.1),
+                yaxis_height - bar_height,
+                 day_start.strftime('%A'),
+                 ha='left', va='center', fontsize=font_size)
+
+    # Only the final subplot gets the x-axis time labels
+    axi.xaxis_date()
+    axi.xaxis.set_major_formatter(mdates.DateFormatter("%H:%M"))
+    axi.set_xlabel('Time of day', fontsize=font_size)
+
+    plt.subplots_adjust(hspace=0.2)
+
+    # Legend
+    if legend:
+        if amputee or not sleep_shade:
+            legend_list = ["Home", "Community", "Non-Wear"]
+        else:
+            legend_list = ["Home", "Sleep", "Community", "Non-Wear"]
+
+        fig.canvas.draw()
+        top = max(ax_i.get_position().y1 for ax_i in fig.axes)
+        fig.legend(
+            handles=[legend_handles[name] for name in legend_list if name in legend_handles],
+            loc="lower center",
+            bbox_to_anchor=(0.5, top + 0.0),
+            bbox_transform=fig.transFigure,
+            ncol=len(legend_list),
+            frameon=True,
+            fontsize=font_size,
+        )
+
+    plt.show()

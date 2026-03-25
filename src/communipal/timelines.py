@@ -194,7 +194,7 @@ def stepping_overlay(df, overlay = 'SLS',
         axi.set_xticklabels([])  # hide ticks for all but bottom
         axi.xaxis_date()
         axi.xaxis.set_major_formatter(mdates.DateFormatter("%H:%M"))
-        # axi.set_xlabel('Time of day')
+        
         axi.grid(axis = 'x')
 
         # Annotation for day of the week 
@@ -203,8 +203,8 @@ def stepping_overlay(df, overlay = 'SLS',
                 current_date.strftime('%A'),
                 ha='left', va='center', fontsize = font_size)
 
-    plt.subplots_adjust(hspace=0.3)
-
+    plt.subplots_adjust(hspace=0.5)
+    axi.set_xlabel('Time of day')
 
     if legend:
         if amputee:

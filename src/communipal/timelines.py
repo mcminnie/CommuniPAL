@@ -87,7 +87,7 @@ def add_default_legend(fig, ncol=3):
 
 def stepping_overlay(df, overlay = 'SLS', 
                      csd_threshold = 54.7, sls_threshold = 22.9, 
-                     amputee = False,legend = True, sleep_shade = True):
+                     amputee = False,legend = True, sleep_shade = True, show = True):
     
     if amputee:
         sleep_shade = False
@@ -225,11 +225,12 @@ def stepping_overlay(df, overlay = 'SLS',
             fontsize=font_size,
         )
 
-    plt.show()
+    if show:
+        plt.show()
     return fig
 
 
-def simple(df,amputee = False,legend = True, sleep_shade = True):
+def simple(df,amputee = False,legend = True, sleep_shade = True, show=True):
     
     if amputee:
         sleep_shade = False
@@ -354,11 +355,12 @@ def simple(df,amputee = False,legend = True, sleep_shade = True):
             frameon=True,
             fontsize=font_size,
         )
-    plt.show()
+    if show:
+        plt.show()
     return fig
 
 
-def comparison(dfs, amputee=False, legend=True, sleep_shade=True, labels=None):
+def comparison(dfs, amputee=False, legend=True, sleep_shade=True, labels=None, show = True):
     '''
     Compare any number of PAL-like dataframes on stacked daily timelines.
 
@@ -537,12 +539,13 @@ def comparison(dfs, amputee=False, legend=True, sleep_shade=True, labels=None):
             fontsize=font_size,
         )
 
-    plt.show()
+    if show:
+        plt.show()
     return fig
 
 
 
-def transition_type(df, amputee = False, legend = True, sleep_shade = True):
+def transition_type(df, amputee = False, legend = True, sleep_shade = True, show = True):
     '''
     Plots primary and secondary transitions, with a marker for the primary transitions.
     '''
@@ -721,7 +724,7 @@ def transition_type(df, amputee = False, legend = True, sleep_shade = True):
     plt.show()
     return fig
 
-def transition_cause(df, amputee = False, legend = True, sleep_shade = True, seated_transport = False, algo_type = None,  sls_threshold = None, csd_threshold = None):
+def transition_cause(df, amputee = False, legend = True, sleep_shade = True, seated_transport = False, algo_type = None,  sls_threshold = None, csd_threshold = None, show = True):
     '''
     Plots primary and secondary transitions, with a marker for the primary transitions.
     '''
@@ -900,5 +903,6 @@ def transition_cause(df, amputee = False, legend = True, sleep_shade = True, sea
             fontsize=font_size,
         )
 
-    plt.show()
+    if show:
+        plt.show()
     return fig

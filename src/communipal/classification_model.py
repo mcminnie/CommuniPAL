@@ -1,7 +1,7 @@
 
 import statistics
 
-def run_algorithm(df, csd = 0,sls = 26,algo_type = 'CSDonly',seated_transport = False, amputee = False):
+def run_algorithm(df, csd = 0,sls = 26,algo_type = 'SLSonly',seated_transport = False, amputee = False):
     ''' 
     input_dict should be the dictionary with key: participant ID and value: activPAL stepping bouts (df)
     Then select all other options e.g.: 
@@ -9,9 +9,10 @@ def run_algorithm(df, csd = 0,sls = 26,algo_type = 'CSDonly',seated_transport = 
                     id=1, 
                     csd = 0,
                     sls = 26, 
-                    algo_type='CSDonly', 
+                    algo_type='SLSonly',
                     seated_transport=True, 
                     amputee = False)
+    algo_type options: SLSonly, CSDonly, CSDorSLS, CSDandSLS
     '''
     
 

@@ -226,6 +226,7 @@ def stepping_overlay(df, overlay = 'SLS',
         )
 
     plt.show()
+    return fig
 
 
 def simple(df,amputee = False,legend = True, sleep_shade = True):
@@ -353,8 +354,8 @@ def simple(df,amputee = False,legend = True, sleep_shade = True):
             frameon=True,
             fontsize=font_size,
         )
-
     plt.show()
+    return fig
 
 
 def comparison(dfs, amputee=False, legend=True, sleep_shade=True, labels=None):
@@ -537,6 +538,7 @@ def comparison(dfs, amputee=False, legend=True, sleep_shade=True, labels=None):
         )
 
     plt.show()
+    return fig
 
 
 
@@ -717,7 +719,7 @@ def transition_type(df, amputee = False, legend = True, sleep_shade = True):
         )
 
     plt.show()
-
+    return fig
 
 def transition_cause(df, amputee = False, legend = True, sleep_shade = True, seated_transport = False, algo_type = None,  sls_threshold = None, csd_threshold = None):
     '''
@@ -899,3 +901,4 @@ def transition_cause(df, amputee = False, legend = True, sleep_shade = True, sea
         )
 
     plt.show()
+    return fig
